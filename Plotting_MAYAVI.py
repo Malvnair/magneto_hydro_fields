@@ -208,7 +208,26 @@ mlab.roll()
 fig4 = mlab.figure(bgcolor=(1, 1, 1), size=(1200, 900))
 
 # Create a vector field source from the RAW magnetic field (no normalization)
-src = mlab.pipeline.vector_field(vx2, vy2, vz2)
+# --- Option A: StructuredGrid in AU to ensure streamlines use physical coordinates ---
+from tvtk.api import tvtk
+from mayavi.tools.pipeline import add_dataset
+
+# Coordinates in AU
+X_AU = x / AU_TO_CM
+Y_AU = y / AU_TO_CM
+Z_AU = z / AU_TO_CM
+
+sg = tvtk.StructuredGrid(dimensions=shape)
+sg.points = np.c_[X_AU.ravel(order='F'),
+                  Y_AU.ravel(order='F'),
+                  Z_AU.ravel(order='F')]
+B_vecs = np.c_[vx2.ravel(order='F'),
+               vy2.ravel(order='F'),
+               vz2.ravel(order='F')]
+sg.point_data.vectors = B_vecs
+sg.point_data.vectors.name = 'vectors'
+
+src = add_dataset(sg)
 mag = mlab.pipeline.extract_vector_norm(src)  # enables coloring by |B|
 
 # Streamlines seeded from a plane spanning the FULL domain at z = 0
@@ -249,6 +268,7 @@ mlab.outline()                    # full-domain outline
 fig4.scene.z_plus_view()          # top-down
 fig4.scene.parallel_projection = True
 mlab.view(distance='auto')
+
 
 # Showing both
 mlab.show()
